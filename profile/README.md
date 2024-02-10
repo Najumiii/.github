@@ -45,14 +45,6 @@ Pour assurer une organisation optimale, nos projets adoptent une nomenclature sp
   - `WP_Template_BlogEntreprise` : Template WordPress pour un blog d'entreprise.
   - `CRM_Interne_GestionClients` : Outil interne CRM pour la gestion des clients.
 
-#### **Toolboxes**
-
-**Format :** `[Domaine]_Toolbox_[Utilité]`
-
-- **Exemples :**
-  - `DevOps_Toolbox_CI_CD` : Boîte à outils DevOps pour l'intégration et la livraison continues.
-  - `UIUX_Toolbox_DesignSystem` : Boîte à outils UI/UX pour les systèmes de design.
-
 #### **Projets Archivés**
 
 Pour les projets qui ne sont plus activement développés mais restent importants pour référence ou pour des besoins futurs :
