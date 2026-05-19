@@ -1,0 +1,55 @@
+name: Cleanup Org Artifacts
+
+on:
+  schedule:
+    - cron: '0 3 * * *'   # Tous les jours à 03:00 UTC
+  workflow_dispatch:        # Trigger manuel
+
+jobs:
+  cleanup:
+    name: Purge artifacts > 24h on all Najumiii repos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge old artifacts
+        env:
+          GH_TOKEN: ${{ secrets.NAJUMI_ORG_PAT }}
+        run: |
+          set -euo pipefail
+          ORG="Najumiii"
+          CUTOFF=$(date -u -d '24 hours ago' +%s)
+          TOTAL_DELETED=0
+          TOTAL_BYTES=0
+
+          echo "Cutoff timestamp: $CUTOFF ($(date -u -d "@$CUTOFF" -Iseconds))"
+          echo ""
+
+          for repo in $(gh api "/orgs/$ORG/repos" --paginate -q '.[].name'); do
+            artifacts=$(gh api "/repos/$ORG/$repo/actions/artifacts" --paginate \
+              -q ".artifacts[] | select((.created_at | fromdateiso8601) < $CUTOFF) | \"\(.id) \(.size_in_bytes)\"" \
+              2>/dev/null || true)
+
+            if [ -z "$artifacts" ]; then
+              continue
+            fi
+
+            count=0
+            bytes=0
+            while IFS=' ' read -r id size; do
+              [ -z "$id" ] && continue
+              if gh api -X DELETE "/repos/$ORG/$repo/actions/artifacts/$id" 2>/dev/null; then
+                count=$((count + 1))
+                bytes=$((bytes + size))
+              fi
+            done <<< "$artifacts"
+
+            if [ $count -gt 0 ]; then
+              mb=$((bytes / 1024 / 1024))
+              echo "  $repo: $count artifacts purgés (${mb} MB)"
+              TOTAL_DELETED=$((TOTAL_DELETED + count))
+              TOTAL_BYTES=$((TOTAL_BYTES + bytes))
+            fi
+          done
+
+          echo ""
+          TOTAL_MB=$((TOTAL_BYTES / 1024 / 1024))
+          echo "=== Résumé : $TOTAL_DELETED artifacts purgés, ${TOTAL_MB} MB libérés ==="
